@@ -235,11 +235,16 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
                  drop_connect_rate=0.2, image_size=None, num_classes=1000):
     """ Creates a efficientnet model. """
 
+    # blocks_args = [
+    #     'r1_k3_s11_e1_i32_o16_se0.25', 'r2_k3_s22_e6_i16_o24_se0.25',
+    #     'r2_k5_s22_e6_i24_o40_se0.25', 'r3_k3_s22_e6_i40_o80_se0.25',
+    #     'r3_k5_s11_e6_i80_o112_se0.25', 'r4_k5_s22_e6_i112_o192_se0.25',
+    #     'r1_k3_s11_e6_i192_o320_se0.25',
+    # ]
     blocks_args = [
         'r1_k3_s11_e1_i32_o16_se0.25', 'r2_k3_s22_e6_i16_o24_se0.25',
         'r2_k5_s22_e6_i24_o40_se0.25', 'r3_k3_s22_e6_i40_o80_se0.25',
-        'r3_k5_s11_e6_i80_o112_se0.25', 'r4_k5_s22_e6_i112_o192_se0.25',
-        'r1_k3_s11_e6_i192_o320_se0.25',
+        'r3_k5_s11_e6_i80_o112_se0.25'
     ]
     blocks_args = BlockDecoder.decode(blocks_args)
 
@@ -288,13 +293,22 @@ url_map = {
 
 def load_pretrained_weights(model, model_name, load_fc=True):
     """ Loads pretrained weights, and downloads if loading for the first time. """
-    state_dict = model_zoo.load_url(url_map[model_name])
-    if load_fc:
-        model.load_state_dict(state_dict)
-    else:
-        state_dict.pop('_fc.weight')
-        state_dict.pop('_fc.bias')
-        res = model.load_state_dict(state_dict, strict=False)
-        assert str(res.missing_keys) == str(['_fc.weight', '_fc.bias']), 'issue loading pretrained weights'
+    # state_dict = model_zoo.load_url(url_map[model_name])
+    pretrain_dict = model_zoo.load_url(url_map[model_name])
+    model_dict = {}
+    state_dict = model.state_dict()
+    for k, v in pretrain_dict.items():
+        if k in state_dict:
+            model_dict[k] = v
+    state_dict.update(model_dict)
+    model.load_state_dict(state_dict,strict=False)
+    print("Having loaded imagenet-pretrained successfully!")
+    # if load_fc:
+    #     model.load_state_dict(state_dict)
+    # else:
+    #     state_dict.pop('_fc.weight')
+    #     state_dict.pop('_fc.bias')
+    #     res = model.load_state_dict(state_dict, strict=False)
+    #     assert str(res.missing_keys) == str(['_fc.weight', '_fc.bias']), 'issue loading pretrained weights'
     print('Loaded pretrained weights for {}'.format(model_name))
-    print('change sucess')
+    print('i am new model')
