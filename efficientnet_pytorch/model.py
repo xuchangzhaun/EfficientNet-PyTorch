@@ -156,7 +156,10 @@ class EfficientNet(nn.Module):
 
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
-        pool_8_feature_5,pool_8_feature_6,pool_8_feature_7,pool_8_feature_8 = input
+        pool_8_feature_5= input
+        pool_8_feature_6= input
+        pool_8_feature_7= input
+        pool_8_feature_8 = input
         # Stem
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
         lower_feature = x
