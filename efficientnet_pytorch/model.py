@@ -167,7 +167,7 @@ class EfficientNet(nn.Module):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            if idx == 2:
+            if idx == 4:
                 pool_8_feature = x
             x = block(x, drop_connect_rate=drop_connect_rate)
         pool_16_feature = x
