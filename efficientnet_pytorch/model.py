@@ -161,12 +161,13 @@ class EfficientNet(nn.Module):
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
         lower_feature = x
         # Blocks
+        print('change')
         for idx, block in enumerate(self._blocks):
             print(idx)
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            if idx == 8:
+            if idx == 2:
                 pool_8_feature = x
             x = block(x, drop_connect_rate=drop_connect_rate)
         pool_16_feature = x
