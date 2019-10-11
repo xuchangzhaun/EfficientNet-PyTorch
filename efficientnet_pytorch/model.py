@@ -162,12 +162,14 @@ class EfficientNet(nn.Module):
         lower_feature = x
         # Blocks
         for idx, block in enumerate(self._blocks):
+            print(idx)
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
-            if idx == 7:
+            if idx == 6:
                 pool_8_feature = x
+
         pool_16_feature = x
         # Head 
         # x = relu_fn(self._bn1(self._conv_head(x)))
