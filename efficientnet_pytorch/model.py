@@ -145,10 +145,10 @@ class EfficientNet(nn.Module):
 
         #
         # # Head
-        in_channels = block_args.output_filters  # output of final block
-        out_channels = round_filters(112, self._global_params)
-        self._conv_head = Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
-        self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        # in_channels = block_args.output_filters  # output of final block
+        # out_channels = round_filters(112, self._global_params)
+        # self._conv_head = Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        # self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
         #
         # # Final linear layers
         # self._dropout = self._global_params.dropout_rate
@@ -169,23 +169,23 @@ class EfficientNet(nn.Module):
             if idx == 7:
                 pool_8_feature = x
         pool_16_feature = x
-        # Head
-        x = relu_fn(self._bn1(self._conv_head(x)))
+        # Head 
+        # x = relu_fn(self._bn1(self._conv_head(x)))
 
-        return x, lower_feature, pool_8_feature ,pool_16_feature
+        return lower_feature, pool_8_feature ,pool_16_feature
 
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
 
         # Convolution layers
-        x ,lower_feature,  pool_8_feature,pool_16_feature= self.extract_features(inputs)
+        lower_feature,  pool_8_feature,pool_16_feature= self.extract_features(inputs)
 
         # # Pooling and final linear layer
         # x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
         # if self._dropout:
         #     x = F.dropout(x, p=self._dropout, training=self.training)
         # x = self._fc(x)
-        return x, lower_feature, pool_8_feature ,pool_16_feature
+        return lower_feature, pool_8_feature ,pool_16_feature
 
 
     @classmethod
