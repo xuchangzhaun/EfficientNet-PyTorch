@@ -161,26 +161,32 @@ class EfficientNet(nn.Module):
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
         lower_feature = x
         # Blocks
-        print('change')
+        print('big change')
         for idx, block in enumerate(self._blocks):
             print(idx)
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            if idx == 4:
-                pool_8_feature = x
+            if idx == 6:
+               pool_8_feature_5  = x 
+            if idx == 7:
+                pool_8_feature_6 = x
+            if idx == 8:
+                pool_8_feature_7 = x
+            if idx == 9:
+                pool_8_feature_8 = x
             x = block(x, drop_connect_rate=drop_connect_rate)
         pool_16_feature = x
         # Head 
         # x = relu_fn(self._bn1(self._conv_head(x)))
-
-        return lower_feature, pool_8_feature ,pool_16_feature
+        return lower_feature, pool_8_feature_5 pool_8_feature_6,pool_8_feature_7,pool_8_feature_8 ,pool_16_feature
+        # return lower_feature, pool_8_feature ,pool_16_feature
 
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
 
         # Convolution layers
-        lower_feature,  pool_8_feature,pool_16_feature= self.extract_features(inputs)
+        lower_feature, pool_8_feature_5 pool_8_feature_6,pool_8_feature_7,pool_8_feature_8 ,pool_16_feature = self.extract_features(inputs)
 
         # # Pooling and final linear layer
         # x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
