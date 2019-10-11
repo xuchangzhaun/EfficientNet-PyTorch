@@ -179,7 +179,7 @@ class EfficientNet(nn.Module):
         pool_16_feature = x
         # Head 
         # x = relu_fn(self._bn1(self._conv_head(x)))
-        return lower_feature, pool_8_feature_5 pool_8_feature_6,pool_8_feature_7,pool_8_feature_8 ,pool_16_feature
+        return lower_feature, pool_8_feature_5,pool_8_feature_6,pool_8_feature_7,pool_8_feature_8 ,pool_16_feature
         # return lower_feature, pool_8_feature ,pool_16_feature
 
     def forward(self, inputs):
