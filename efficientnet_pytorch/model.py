@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from efficient_net.efficientnet_pytorch.utils import (
+from .utils import (
     relu_fn,
     hswish,
     hsigmoid,
