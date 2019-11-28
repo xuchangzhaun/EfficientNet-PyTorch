@@ -22,7 +22,7 @@ from torch.utils import model_zoo
 GlobalParams = collections.namedtuple('GlobalParams', [
     'batch_norm_momentum', 'batch_norm_epsilon', 'dropout_rate',
     'num_classes', 'width_coefficient', 'depth_coefficient',
-    'depth_divisor', 'min_depth', 'drop_connect_rate', 'image_size'])
+    'depth_divisor', 'min_depth', 'drop_connect_rate', 'image_size',])
 
 
 # Parameters for an individual model block
@@ -39,6 +39,13 @@ BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 def relu_fn(x):
     """ Swish activation function """
     return x * torch.sigmoid(x)
+
+def hswish(x):
+    return x * F.relu6(x + 3, inplace=True) / 6
+
+def hsigmoid(x):
+    return F.relu6(x + 3, inplace=True) / 6
+
 
 
 def round_filters(filters, global_params):
@@ -144,7 +151,7 @@ def efficientnet_params(model_name):
     """ Map EfficientNet model name to parameter coefficients. """
     params_dict = {
         # Coefficients:   width,depth,res,dropout
-        'efficientnet-b0': (1.0, 1.0, 224, 0.2),
+        'efficientnet-b0': (1.0, 1.0, 224, 0.0),
         'efficientnet-b1': (1.0, 1.1, 240, 0.2),
         'efficientnet-b2': (1.1, 1.2, 260, 0.3),
         'efficientnet-b3': (1.2, 1.4, 300, 0.3),
@@ -260,6 +267,7 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
         depth_divisor=8,
         min_depth=None,
         image_size=image_size,
+
     )
 
     return blocks_args, global_params
