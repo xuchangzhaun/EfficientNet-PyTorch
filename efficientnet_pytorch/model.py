@@ -1,9 +1,10 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-
-from .utils import (
+from efficient_net.efficientnet_pytorch.utils import (
     relu_fn,
+    hswish,
+    hsigmoid,
     round_filters,
     round_repeats,
     drop_connect,
@@ -25,14 +26,14 @@ class MBConvBlock(nn.Module):
         has_se (bool): Whether the block contains a Squeeze and Excitation layer.
     """
 
-    def __init__(self, block_args, global_params):
+    def __init__(self, block_args, global_params,activation):
         super().__init__()
         self._block_args = block_args
         self._bn_mom = 1 - global_params.batch_norm_momentum
         self._bn_eps = global_params.batch_norm_epsilon
         self.has_se = (self._block_args.se_ratio is not None) and (0 < self._block_args.se_ratio <= 1)
         self.id_skip = block_args.id_skip  # skip connection and drop connect
-
+        self.activation = activation
         # Get static or dynamic convolution depending on image size
         Conv2d = get_same_padding_conv2d(image_size=global_params.image_size)
 
@@ -72,13 +73,14 @@ class MBConvBlock(nn.Module):
         # Expansion and Depthwise Convolution
         x = inputs
         if self._block_args.expand_ratio != 1:
-            x = relu_fn(self._bn0(self._expand_conv(inputs)))
-        x = relu_fn(self._bn1(self._depthwise_conv(x)))
+            # x = relu_fn(self._bn0(self._expand_conv(inputs)))
+            x = self.activation(self._bn0(self._expand_conv(inputs)))
+        x = self.activation(self._bn1(self._depthwise_conv(x)))
 
         # Squeeze and Excitation
         if self.has_se:
             x_squeezed = F.adaptive_avg_pool2d(x, 1)
-            x_squeezed = self._se_expand(relu_fn(self._se_reduce(x_squeezed)))
+            x_squeezed = self._se_expand(self.activation(self._se_reduce(x_squeezed)))
             x = torch.sigmoid(x_squeezed) * x
 
         x = self._bn2(self._project_conv(x))
@@ -105,12 +107,21 @@ class EfficientNet(nn.Module):
 
     """
 
-    def __init__(self, blocks_args=None, global_params=None):
+    def __init__(self, blocks_args=None, global_params=None,active=None):
         super().__init__()
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self._global_params = global_params
         self._blocks_args = blocks_args
+        self.active = active
+     
+        # Stem
+        if self.active is 'relu_fn':
+            self.activation = relu_fn
+        if self.active is 'hswish':
+            self.activation = hswish
+        if self.active is 'hsigmoid':
+            self.activation = hsigmoid
 
         # Get static or dynamic convolution depending on image size
         Conv2d = get_same_padding_conv2d(image_size=global_params.image_size)
@@ -137,11 +148,11 @@ class EfficientNet(nn.Module):
             )
 
             # The first block needs to take care of stride and filter size increase.
-            self._blocks.append(MBConvBlock(block_args, self._global_params))
+            self._blocks.append(MBConvBlock(block_args, self._global_params,self.activation))
             if block_args.num_repeat > 1:
                 block_args = block_args._replace(input_filters=block_args.output_filters, stride=1)
             for _ in range(block_args.num_repeat - 1):
-                self._blocks.append(MBConvBlock(block_args, self._global_params))
+                self._blocks.append(MBConvBlock(block_args, self._global_params,self.activation))
 
         #
         # # Head
@@ -156,49 +167,53 @@ class EfficientNet(nn.Module):
 
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
-        pool_8_feature = input
-        
-        # Stem
-        x = relu_fn(self._bn0(self._conv_stem(inputs)))
-        lower_feature = x
+        lower_2_1_feature,lower_2_2_feature,lower_4_feature, pool_8_feature ,pool_16_feature \
+            = 0,0,0,0,0
+
+        x = self.activation(self._bn0(self._conv_stem(inputs)))
+        lower_2_1_feature = x
         # Blocks
         for idx, block in enumerate(self._blocks):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
-            if idx == 4 :
+            if inputs.shape[3]/x.shape[3]==2:
+                lower_2_2_feature = x
+            if inputs.shape[3]/x.shape[3]==4:
+                lower_4_feature = x
+            if inputs.shape[3]/x.shape[3]==8:
                 pool_8_feature = x
         pool_16_feature = x
         # Head 
         # x = relu_fn(self._bn1(self._conv_head(x)))
-        return lower_feature, pool_8_feature ,pool_16_feature
+        return lower_2_1_feature,lower_2_2_feature,lower_4_feature, pool_8_feature ,pool_16_feature
         # return lower_feature, pool_8_feature ,pool_16_feature
     
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
     
         # Convolution layers
-        lower_feature, pool_8_feature ,pool_16_feature = self.extract_features(inputs)
+        lower_2_1_feature,lower_2_2_feature,lower_4_feature, pool_8_feature ,pool_16_feature = self.extract_features(inputs)
     
         # # Pooling and final linear layer
         # x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
         # if self._dropout:
-        #     x = F.dropout(x, p=self._dropout, training=self.training)
+        #     x = F.dropout(x, p=self ._dropout, training=self.training)
         # x = self._fc(x)
-        return lower_feature,pool_8_feature ,pool_16_feature
+        return lower_2_1_feature,lower_2_2_feature,lower_4_feature, pool_8_feature ,pool_16_feature
     
 
 
     @classmethod
-    def from_name(cls, model_name, override_params=None):
+    def from_name(cls, model_name,active, override_params=None):
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
-        return cls(blocks_args, global_params)
+        return cls(blocks_args, global_params,active)
 
     @classmethod
-    def from_pretrained(cls, model_name, num_classes=1000):
-        model = cls.from_name(model_name, override_params={'num_classes': num_classes})
+    def from_pretrained(cls, model_name, active,num_classes=1000):
+        model = cls.from_name(model_name,active,override_params={'num_classes': num_classes})
         load_pretrained_weights(model, model_name, load_fc=(num_classes == 1000))
         return model
 
@@ -216,3 +231,15 @@ class EfficientNet(nn.Module):
         valid_models = ['efficientnet-b'+str(i) for i in range(num_models)]
         if model_name not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
+
+import torch
+import argparse
+if __name__ == "__main__":
+   
+    model = EfficientNet.from_pretrained('efficientnet-b3',active='relu_fn')
+    input = torch.rand(1, 3, 224, 224)
+    lower_2_1_feature,lower_2_2_feature,lower_4_feature, pool_8_feature ,pool_16_feature = model(input)
+    print(lower_2_1_feature.size())
+    print(lower_4_feature.size())
+    print(pool_8_feature.size())
+    print(pool_16_feature.size())
