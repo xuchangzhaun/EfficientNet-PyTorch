@@ -22,7 +22,7 @@ from torch.utils import model_zoo
 GlobalParams = collections.namedtuple('GlobalParams', [
     'batch_norm_momentum', 'batch_norm_epsilon', 'dropout_rate',
     'num_classes', 'width_coefficient', 'depth_coefficient',
-    'depth_divisor', 'min_depth', 'drop_connect_rate', 'image_size',])
+    'depth_divisor', 'min_depth', 'drop_connect_rate', 'image_size'])
 
 
 # Parameters for an individual model block
@@ -39,13 +39,6 @@ BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 def relu_fn(x):
     """ Swish activation function """
     return x * torch.sigmoid(x)
-
-def hswish(x):
-    return x * F.relu6(x + 3, inplace=True) / 6
-
-def hsigmoid(x):
-    return F.relu6(x + 3, inplace=True) / 6
-
 
 
 def round_filters(filters, global_params):
@@ -151,7 +144,7 @@ def efficientnet_params(model_name):
     """ Map EfficientNet model name to parameter coefficients. """
     params_dict = {
         # Coefficients:   width,depth,res,dropout
-        'efficientnet-b0': (1.0, 1.0, 224, 0.0),
+        'efficientnet-b0': (1.0, 1.0, 224, 0.2),
         'efficientnet-b1': (1.0, 1.1, 240, 0.2),
         'efficientnet-b2': (1.1, 1.2, 260, 0.3),
         'efficientnet-b3': (1.2, 1.4, 300, 0.3),
@@ -242,16 +235,11 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
                  drop_connect_rate=0.2, image_size=None, num_classes=1000):
     """ Creates a efficientnet model. """
 
-    # blocks_args = [
-    #     'r1_k3_s11_e1_i32_o16_se0.25', 'r2_k3_s22_e6_i16_o24_se0.25',
-    #     'r2_k5_s22_e6_i24_o40_se0.25', 'r3_k3_s22_e6_i40_o80_se0.25',
-    #     'r3_k5_s11_e6_i80_o112_se0.25', 'r4_k5_s22_e6_i112_o192_se0.25',
-    #     'r1_k3_s11_e6_i192_o320_se0.25',
-    # ]
     blocks_args = [
         'r1_k3_s11_e1_i32_o16_se0.25', 'r2_k3_s22_e6_i16_o24_se0.25',
         'r2_k5_s22_e6_i24_o40_se0.25', 'r3_k3_s22_e6_i40_o80_se0.25',
-        'r3_k5_s11_e6_i80_o112_se0.25'
+        'r3_k5_s11_e6_i80_o112_se0.25', 'r4_k5_s22_e6_i112_o192_se0.25',
+        'r1_k3_s11_e6_i192_o320_se0.25',
     ]
     blocks_args = BlockDecoder.decode(blocks_args)
 
@@ -267,7 +255,6 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
         depth_divisor=8,
         min_depth=None,
         image_size=image_size,
-
     )
 
     return blocks_args, global_params
@@ -301,22 +288,12 @@ url_map = {
 
 def load_pretrained_weights(model, model_name, load_fc=True):
     """ Loads pretrained weights, and downloads if loading for the first time. """
-    # state_dict = model_zoo.load_url(url_map[model_name])
-    pretrain_dict = model_zoo.load_url(url_map[model_name])
-    model_dict = {}
-    state_dict = model.state_dict()
-    for k, v in pretrain_dict.items():
-        if k in state_dict:
-            model_dict[k] = v
-    state_dict.update(model_dict)
-    model.load_state_dict(state_dict,strict=False)
-    print("Having loaded imagenet-pretrained successfully!")
-    # if load_fc:
-    #     model.load_state_dict(state_dict)
-    # else:
-    #     state_dict.pop('_fc.weight')
-    #     state_dict.pop('_fc.bias')
-    #     res = model.load_state_dict(state_dict, strict=False)
-    #     assert str(res.missing_keys) == str(['_fc.weight', '_fc.bias']), 'issue loading pretrained weights'
+    state_dict = model_zoo.load_url(url_map[model_name])
+    if load_fc:
+        model.load_state_dict(state_dict)
+    else:
+        state_dict.pop('_fc.weight')
+        state_dict.pop('_fc.bias')
+        res = model.load_state_dict(state_dict, strict=False)
+        assert str(res.missing_keys) == str(['_fc.weight', '_fc.bias']), 'issue loading pretrained weights'
     print('Loaded pretrained weights for {}'.format(model_name))
-    print('i am new model')
