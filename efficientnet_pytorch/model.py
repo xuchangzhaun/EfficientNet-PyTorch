@@ -150,8 +150,8 @@ class EfficientNet(nn.Module):
         self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
         # Final linear layer
-        self._dropout = self._global_params.dropout_rate
-        self._fc = nn.Linear(out_channels, self._global_params.num_classes)
+#         self._dropout = self._global_params.dropout_rate
+#         self._fc = nn.Linear(out_channels, self._global_params.num_classes)
 
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
