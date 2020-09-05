@@ -154,7 +154,7 @@ class EfficientNet(nn.Module):
         # self._dropout = self._global_params.dropout_rate
         # self._fc = nn.Linear(out_channels, self._global_params.num_classes)
 
-    def extract_features(self, inputs):
+     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
         pool_8_feature = input
         lower_feature = input
@@ -174,7 +174,7 @@ class EfficientNet(nn.Module):
 
         # Head
         # x = relu_fn(self._bn1(self._conv_head(x)))
-        return lower_feature, pool_8_feature ,x
+        return x, pool_8_feature ,lower_feature
 
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
