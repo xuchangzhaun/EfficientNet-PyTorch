@@ -168,13 +168,13 @@ class EfficientNet(nn.Module):
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
             if idx == 2:
-                lower_feature  = x
-            if idx == 4 :
+                lower_feature = x
+            if idx == 4:
                 pool_8_feature = x
 
         # Head
         # x = relu_fn(self._bn1(self._conv_head(x)))
-        return x, pool_8_feature ,lower_feature
+        return x, pool_8_feature, lower_feature
 
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
