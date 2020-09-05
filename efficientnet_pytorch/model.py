@@ -154,28 +154,27 @@ class EfficientNet(nn.Module):
         # self._dropout = self._global_params.dropout_rate
         # self._fc = nn.Linear(out_channels, self._global_params.num_classes)
 
-     def extract_features(self, inputs):
-         """ Returns output of the final convolution layer """
-         pool_8_feature = input
-         lower_feature = input
-         # Stem
-         x = relu_fn(self._bn0(self._conv_stem(inputs)))
-         # lower_feature = x
-         # Blocks
-         for idx, block in enumerate(self._blocks):
-             
-             drop_connect_rate = self._global_params.drop_connect_rate
-             if drop_connect_rate:
-                 drop_connect_rate *= float(idx) / len(self._blocks)
-             x = block(x, drop_connect_rate=drop_connect_rate)
-             if idx == 2:
-                 lower_feature = x
-             if idx == 4:
-                 pool_8_feature = x
+    def extract_features(self, inputs):
+        """ Returns output of the final convolution layer """
+        pool_8_feature = input
+        lower_feature = input
+        # Stem
+        x = relu_fn(self._bn0(self._conv_stem(inputs)))
+        # lower_feature = x
+        # Blocks
+        for idx, block in enumerate(self._blocks):
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+            x = block(x, drop_connect_rate=drop_connect_rate)
+            if idx == 2:
+                lower_feature = x
+            if idx == 4:
+                pool_8_feature = x
 
-         # Head
-         # x = relu_fn(self._bn1(self._conv_head(x)))
-         return x, pool_8_feature, lower_feature
+        # Head
+        # x = relu_fn(self._bn1(self._conv_head(x)))
+        return x, pool_8_feature, lower_feature
 
 
     def forward(self, inputs):
