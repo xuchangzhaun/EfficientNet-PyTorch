@@ -173,8 +173,8 @@ class EfficientNet(nn.Module):
              if idx == 4:
                  pool_8_feature = x
 
-        # Head
-        # x = relu_fn(self._bn1(self._conv_head(x)))
+         # Head
+         # x = relu_fn(self._bn1(self._conv_head(x)))
          return x, pool_8_feature, lower_feature
 
 
