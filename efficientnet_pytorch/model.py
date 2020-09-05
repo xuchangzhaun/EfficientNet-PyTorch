@@ -157,25 +157,24 @@ class EfficientNet(nn.Module):
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
         pool_8_feature = input
-
+        lower_feature = input
         # Stem
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
-        lower_feature = x
+        # lower_feature = x
         # Blocks
-        print('big change')
         for idx, block in enumerate(self._blocks):
-            print(idx)
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
+            if idx == 2:
+                lower_feature  = x
             if idx == 4 :
                 pool_8_feature = x
-        pool_16_feature = x
+
         # Head
         # x = relu_fn(self._bn1(self._conv_head(x)))
-        return lower_feature, pool_8_feature ,pool_16_feature
-        # return lower_feature, pool_8_feature ,pool_16_feature
+        return lower_feature, pool_8_feature ,x
 
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
