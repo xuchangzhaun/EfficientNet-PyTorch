@@ -176,7 +176,6 @@ class EfficientNet(nn.Module):
         # x = relu_fn(self._bn1(self._conv_head(x)))
         return x, pool_8_feature, lower_feature
 
-
     def forward(self, inputs):
         """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
 
