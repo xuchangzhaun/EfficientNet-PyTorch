@@ -167,9 +167,9 @@ class EfficientNet(nn.Module):
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
-            if idx == 2:
-                lower_feature = x
-            if idx == 4:
+            if inputs.shape[3]/x.shape[3]==4:
+                lower_feature =x
+            if inputs.shape[3]/x.shape[3]==8:
                 pool_8_feature = x
 
         # Head
